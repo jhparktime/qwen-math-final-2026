@@ -1,0 +1,64 @@
+{
+  "schema_version": "qwen_math_final_v1",
+  "run_id": "FINAL-0001-r2pro4-sc16-adaptive-pal3",
+  "expected_rows": 2000,
+  "model": {
+    "id": "Qwen/Qwen2.5-3B-Instruct",
+    "revision": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
+    "adapter_name": "RFT-0004B-r2-pro4-hint-lowdrift-lora",
+    "adapter_weight_sha256": "e4a22286b3b6a3108c0f2a374012601309abee6511b96b2a108749d432909f11"
+  },
+  "prompt": {
+    "version": "r2_pro4hint_laneb_k4_boxed_v1",
+    "system": "You are a helpful assistant that solves math problems step by step.",
+    "user_suffix": "Solve this step by step, then give the final answer as a single integer inside \\boxed{}."
+  },
+  "generation": {
+    "seed": 20260903,
+    "n": 16,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "base_max_new_tokens": 2048,
+    "max_model_len": 16384,
+    "prompt_chunk": 16,
+    "gpu_memory_utilization": 0.94,
+    "max_num_seqs": 256,
+    "max_num_batched_tokens": 65536,
+    "vote": "normalized integer plurality",
+    "tie_break": "earliest sampled answer among tied top counts",
+    "no_valid_vote_fallback": "0"
+  },
+  "adaptive_length": {
+    "second_max_new_tokens": 4096,
+    "final_max_new_tokens": 8192,
+    "prompt_chunk_4096": 4,
+    "prompt_chunk_8192": 1,
+    "replacement_rule": "replace only originally capped sample index when longer run ends in a terminal boxed integer",
+    "router": {
+      "top_gain_min": 2,
+      "margin_gain_min": 1,
+      "extended_top_min": 4,
+      "protect_pal_override": true,
+      "status": "conservative deployment default; replace with CHAMP-0003 frozen values if promoted before model-development deadline"
+    }
+  },
+  "pal": {
+    "prompt_version": "r2_pro4hint_conditional_pal4_v1",
+    "seed": 20260907,
+    "n": 4,
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "max_new_tokens": 1024,
+    "prompt_chunk": 32,
+    "trigger_margin_le": 1,
+    "min_agreement": 3,
+    "system": "You are a mathematical programmer. Solve the problem by writing one short, deterministic Python program using exact arithmetic or exhaustive search.",
+    "user_suffix": "Return exactly one fenced ```python``` block and no prose. The program must be self-contained, use only the Python standard library, and print exactly one signed integer as its final non-empty output line. Do not read files, use the network, spawn processes, or hard-code a supplied answer.",
+    "sandbox": {
+      "python_isolated_mode": true,
+      "cpu_seconds": 3,
+      "wall_seconds": 4,
+      "memory_mib": 768
+    }
+  }
+}

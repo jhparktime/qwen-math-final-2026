@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+.env
+*.key
+*.pem
+
+# Organizer data and inference products are never committed.
+inputs/*
+!inputs/README.md
+runs/
+submissions/
+predictions/
+*.csv
+*.jsonl
+
+# Keep the adapter out of ordinary Git. Upload it with Git LFS or a release.
+artifacts/*
+!artifacts/README.md
+!artifacts/adapter_manifest.example.json
+
+# Local model/cache/logging state.
+checkpoints/
+logs/
+wandb/
+.cache/
