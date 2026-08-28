@@ -58,18 +58,22 @@ before loading the model.
 
 ## Required local files
 
-Organizer datasets are not committed. Put the final question file and adapter
-in these locations, or pass other paths on the command line:
+Organizer datasets are not committed. Put the final question file here:
 
 ```text
 inputs/deep_chal_math_test.csv
-artifacts/r2_pro4_hint_adapter/adapter_config.json
-artifacts/r2_pro4_hint_adapter/adapter_model.safetensors
+```
+
+Fetch the frozen adapter once while network access is available:
+
+```bash
+python scripts/fetch_frozen_adapter.py
 ```
 
 The input must contain unique `id` values and non-empty `question` values. A
 non-empty `answer` column is rejected. The adapter weight is hashed before the
-model is loaded.
+model is loaded. Adapter download is setup-only; the inference command enables
+offline Hugging Face and Transformers modes before loading the model.
 
 ## Final inference
 

@@ -20,6 +20,8 @@ predictions/
 artifacts/*
 !artifacts/README.md
 !artifacts/adapter_manifest.example.json
+!artifacts/r2_pro4_hint_adapter/
+!artifacts/r2_pro4_hint_adapter/adapter_config.json
 
 # Local model/cache/logging state.
 checkpoints/
