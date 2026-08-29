@@ -15,8 +15,8 @@ from pathlib import Path
 
 
 REPOSITORY = "jhparktime/qwen-math-final-2026"
-TAG = "r2-pro4hint-v1"
-EXPECTED_SHA256 = "e4a22286b3b6a3108c0f2a374012601309abee6511b96b2a108749d432909f11"
+DEFAULT_TAG = "r2-pro4hint-v1"
+DEFAULT_EXPECTED_SHA256 = "e4a22286b3b6a3108c0f2a374012601309abee6511b96b2a108749d432909f11"
 
 
 def sha256_file(path: Path) -> str:
@@ -34,6 +34,13 @@ def run(command: list[str]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--adapter-dir", type=Path, required=True)
+    parser.add_argument("--tag", default=DEFAULT_TAG)
+    parser.add_argument("--title", default="Frozen R2 Pro4-hint adapter")
+    parser.add_argument(
+        "--expected-sha256",
+        default=DEFAULT_EXPECTED_SHA256,
+        help="Use an empty string to accept the locally computed digest when packaging a new adapter.",
+    )
     args = parser.parse_args()
     if shutil.which("gh") is None:
         raise RuntimeError("GitHub CLI (gh) is required; install it and run gh auth login first")
@@ -42,10 +49,10 @@ def main() -> None:
     if not weight.exists() or not config.exists():
         raise FileNotFoundError("adapter_config.json and adapter_model.safetensors are both required")
     digest = sha256_file(weight)
-    if digest != EXPECTED_SHA256:
+    if args.expected_sha256 and digest != args.expected_sha256:
         raise ValueError(f"Unexpected adapter SHA256: {digest}")
     check = subprocess.run(
-        ["gh", "release", "view", TAG, "--repo", REPOSITORY],
+        ["gh", "release", "view", args.tag, "--repo", REPOSITORY],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
@@ -53,18 +60,18 @@ def main() -> None:
     if check.returncode:
         run(
             [
-                "gh", "release", "create", TAG, "--repo", REPOSITORY,
-                "--title", "Frozen R2 Pro4-hint adapter", "--notes",
-                f"R2 Pro4-hint LoRA adapter. SHA-256: {EXPECTED_SHA256}",
+                "gh", "release", "create", args.tag, "--repo", REPOSITORY,
+                "--title", args.title, "--notes",
+                f"Frozen LoRA adapter. SHA-256: {digest}",
             ]
         )
     run(
         [
-            "gh", "release", "upload", TAG, str(weight), "--repo", REPOSITORY,
+            "gh", "release", "upload", args.tag, str(weight), str(config), "--repo", REPOSITORY,
             "--clobber",
         ]
     )
-    run(["gh", "release", "view", TAG, "--repo", REPOSITORY, "--json", "url,assets"])
+    run(["gh", "release", "view", args.tag, "--repo", REPOSITORY, "--json", "url,assets"])
 
 
 if __name__ == "__main__":
