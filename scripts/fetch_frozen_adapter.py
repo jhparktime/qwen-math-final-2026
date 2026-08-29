@@ -15,7 +15,7 @@ RELEASE_ROOT = (
     "r3-r2continue-v1"
 )
 ASSETS = {
-    "adapter_config.json": "6b3c883bb8bbf11d2f557cdca0131aebb08cba71af55f787b7547d1013423e93",
+    "adapter_config.json": "a292598b9f11c1395270c8eb3013852d949a2a5b1315b8691cf08f8ddfa269df",
     "adapter_model.safetensors": "3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f",
 }
 
