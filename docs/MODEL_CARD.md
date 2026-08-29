@@ -25,13 +25,13 @@ final-test question is transmitted to an API.
 
 ## Frozen inference
 
-- SC16: temperature 1.0, top-p 0.95, 2,048 output tokens
+- SC16: seed 3, temperature 1.0, top-p 0.95, 2,048 output tokens
 - Vote: normalized integer plurality; earliest sampled answer breaks a tie
 - Adaptive length: capped sample indices may be regenerated at 4,096 and then
   8,192 tokens; a conservative stronger-consensus router decides whether a
   replacement may change the result
-- PAL fallback: only original SC16 margin <= 1; accept an executable PAL answer
-  only when at least 3 of 4 executions agree
+- PAL fallback: seed 3; only original SC16 margin <= 1; accept an executable
+  PAL answer only when at least 3 of 4 executions agree
 - Output: one exact signed integer string per input ID
 
 Public leaderboard reference: `0.79783` for this R3 SC16 + PAL3 + adaptive

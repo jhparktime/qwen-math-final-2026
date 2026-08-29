@@ -14,7 +14,7 @@
     "user_suffix": "Solve this step by step, then give the final answer as a single integer inside \\boxed{}."
   },
   "generation": {
-    "seed": 20260903,
+    "seed": 3,
     "n": 16,
     "temperature": 1.0,
     "top_p": 0.95,
@@ -44,7 +44,7 @@
   },
   "pal": {
     "prompt_version": "r3_r2continue_conditional_pal4_v1",
-    "seed": 20260907,
+    "seed": 3,
     "n": 4,
     "temperature": 0.8,
     "top_p": 0.95,

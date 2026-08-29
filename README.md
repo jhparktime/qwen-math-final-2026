@@ -31,6 +31,7 @@ question leaves the runtime.
 | Adapter SHA-256 | `3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f` |
 | Adapter release | [`r3-r2continue-v1`](https://github.com/jhparktime/qwen-math-final-2026/releases/tag/r3-r2continue-v1) |
 | Prompt | `r3_r2continue_original_boxed_v1` |
+| Sampling seed | `3` (SC16 and PAL; derived deterministically per ID and prompt version) |
 | Public-LB reference | `0.79783` for R3 SC16 + PAL3 + adaptive length |
 
 The public score is an experimental reference, not an input to inference or a
