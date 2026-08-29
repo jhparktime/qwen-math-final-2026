@@ -1,7 +1,7 @@
 {
   "base_model": "Qwen/Qwen2.5-3B-Instruct",
   "base_model_revision": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
-  "adapter_run": "RFT-0004B-r2-pro4-hint-lowdrift-lora",
+  "adapter_run": "RFT-0008D-r3mix-r2continue-r16-a100",
   "adapter_weight_file": "adapter_model.safetensors",
-  "adapter_weight_sha256": "e4a22286b3b6a3108c0f2a374012601309abee6511b96b2a108749d432909f11"
+  "adapter_weight_sha256": "3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f"
 }

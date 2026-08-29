@@ -1,15 +1,15 @@
 {
   "schema_version": "qwen_math_final_v1",
-  "run_id": "FINAL-0001-r2pro4-sc16-adaptive-pal3",
+  "run_id": "FINAL-0002-r3-r2continue-sc16-adaptive-pal3",
   "expected_rows": 2000,
   "model": {
     "id": "Qwen/Qwen2.5-3B-Instruct",
     "revision": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
-    "adapter_name": "RFT-0004B-r2-pro4-hint-lowdrift-lora",
-    "adapter_weight_sha256": "e4a22286b3b6a3108c0f2a374012601309abee6511b96b2a108749d432909f11"
+    "adapter_name": "RFT-0008D-r3mix-r2continue-r16-a100",
+    "adapter_weight_sha256": "3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f"
   },
   "prompt": {
-    "version": "r2_pro4hint_laneb_k4_boxed_v1",
+    "version": "r3_r2continue_original_boxed_v1",
     "system": "You are a helpful assistant that solves math problems step by step.",
     "user_suffix": "Solve this step by step, then give the final answer as a single integer inside \\boxed{}."
   },
@@ -43,7 +43,7 @@
     }
   },
   "pal": {
-    "prompt_version": "r2_pro4hint_conditional_pal4_v1",
+    "prompt_version": "r3_r2continue_conditional_pal4_v1",
     "seed": 20260907,
     "n": 4,
     "temperature": 0.8,

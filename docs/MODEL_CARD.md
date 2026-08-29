@@ -1,49 +1,46 @@
-# Model card
+# Model card — frozen R3 deployment candidate
 
-## Final solver
+## Solver
 
-- Base model: `Qwen/Qwen2.5-3B-Instruct`
-- Base revision: `aa8e72537993ba99e69dfaafa59ed015b17504d1`
-- Adapter run: `RFT-0004B-r2-pro4-hint-lowdrift-lora`
-- Adapter weight SHA-256: `e4a22286b3b6a3108c0f2a374012601309abee6511b96b2a108749d432909f11`
-- Adapter type: LoRA continuation from the R1 Lane-B checkpoint
+- Base: `Qwen/Qwen2.5-3B-Instruct`
+- Pinned base revision: `aa8e72537993ba99e69dfaafa59ed015b17504d1`
+- Adapter run: `RFT-0008D-r3mix-r2continue-r16-a100`
+- Adapter SHA-256: `3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f`
+- Adapter type: rank-16 LoRA continuation from the R2 Pro4-hint solver
 
-The adapter was trained only from organizer-provided training questions and
-derived training-only reasoning traces. Evaluation questions were excluded.
+## Training lineage
 
-## Training summary
+1. R1 retained native Qwen rollouts on organizer training questions only when
+   the terminal boxed integer matched the organizer label.
+2. R2 used training-only Solar Pro 4 derivations as private hints on difficult
+   training questions. Qwen rewrote the reasoning; teacher text was never an
+   assistant target, and only strict Qwen rewrites entered SFT.
+3. R3 froze the R2 solver, generated additional Qwen rewrites on hard
+   organizer-training questions with the same training-only hint protocol, and
+   continued LoRA training on the audited R1/R2/R3 mixture.
 
-1. R1 sampled four native Qwen solutions per organizer training question.
-2. Only Qwen solutions whose terminal boxed integer matched the organizer label
-   passed the strict filter; at most two traces per question were retained.
-3. For the R2 hard subset, pre-existing Solar Pro 4 training-only solutions were
-   used as private hints. Qwen rewrote each derivation in its own style.
-4. Only rewritten Qwen responses that passed the same terminal boxed-answer
-   filter entered SFT. Teacher text was not used as the assistant target.
-5. The R2 continuation used 65% hard rewritten traces and 35% untouched R1
-   anchors, assistant-only loss, BF16, learning rate `1e-5`, effective batch 48,
-   and 0.5 epoch.
-
-Commercial API generation was restricted to training data construction. No
-leaderboard or final-test question is sent to an API.
+The organizer evaluation and leaderboard questions were excluded from training.
+Commercial API use was limited to training-data construction; no evaluation or
+final-test question is transmitted to an API.
 
 ## Frozen inference
 
 - SC16: temperature 1.0, top-p 0.95, 2,048 output tokens
-- Vote: normalized integer plurality
-- Tie break: earliest sampled answer among tied top counts
-- Length recovery: only capped sample indices are reconsidered at 4,096 and,
-  when still capped, 8,192 tokens
-- PAL fallback: original SC16 margin at most 1 and executable PAL agreement at
-  least 3 of 4
-- Final answer format: one exact signed integer string
+- Vote: normalized integer plurality; earliest sampled answer breaks a tie
+- Adaptive length: capped sample indices may be regenerated at 4,096 and then
+  8,192 tokens; a conservative stronger-consensus router decides whether a
+  replacement may change the result
+- PAL fallback: only original SC16 margin <= 1; accept an executable PAL answer
+  only when at least 3 of 4 executions agree
+- Output: one exact signed integer string per input ID
 
-Public leaderboard reference: R2+PAL `0.80144`. This value is descriptive and
-is not used by the inference code.
+Public leaderboard reference: `0.79783` for this R3 SC16 + PAL3 + adaptive
+configuration. It is descriptive only and not used during final inference.
 
 ## Limitations
 
-The solver can produce persuasive but incorrect arithmetic. Longer generations
-are therefore routed conservatively and never override a successful PAL
-decision. PAL execution is restricted to a small Python standard-library
-allowlist with time, memory, file-size, and file-descriptor limits.
+The solver can produce convincing but incorrect reasoning. Longer output is
+not automatically better, so adaptive replacement is consensus-gated and does
+not override a valid PAL result. PAL code is restricted to a small Python
+standard-library allowlist with CPU, wall-time, memory, file-size, and
+file-descriptor limits.

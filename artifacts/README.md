@@ -1,32 +1,22 @@
-# Frozen adapter
+# Frozen R3 adapter
 
-`adapter_config.json` is versioned with this repository. Download the frozen
-weight once, before entering the offline inference stage:
+Download the frozen R3 adapter before entering offline inference:
 
 ```bash
 python scripts/fetch_frozen_adapter.py
 ```
 
-The command retrieves the pinned GitHub Release asset and validates its SHA-256.
-The resulting directory is:
+The command downloads both release assets, validates each SHA-256, and writes:
 
 ```text
-artifacts/r2_pro4_hint_adapter/
+artifacts/r3_r2continue_adapter/
 ├── adapter_config.json
 └── adapter_model.safetensors
 ```
 
-Required weight SHA-256:
+| Asset | SHA-256 |
+|---|---|
+| `adapter_config.json` | `6b3c883bb8bbf11d2f557cdca0131aebb08cba71af55f787b7547d1013423e93` |
+| `adapter_model.safetensors` | `3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f` |
 
-```text
-e4a22286b3b6a3108c0f2a374012601309abee6511b96b2a108749d432909f11
-```
-
-The inference script rejects a missing or mismatched adapter. The 119.8 MB
-weight is stored as a GitHub Release asset rather than ordinary Git because it
-exceeds GitHub's 100 MB file limit; do not silently substitute another
-checkpoint.
-
-To create that Release from the original mounted Drive artifact, use
-`notebooks/UPLOAD_FROZEN_ADAPTER_TO_GITHUB.ipynb`. The one-time GitHub device
-login remains in the Colab runtime and no credential is committed.
+The 119.8 MB weight is stored as a [GitHub Release asset](https://github.com/jhparktime/qwen-math-final-2026/releases/tag/r3-r2continue-v1), not ordinary Git. Do not substitute a different checkpoint.

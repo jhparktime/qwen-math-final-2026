@@ -311,7 +311,7 @@ def main() -> None:
             raise RuntimeError(f"Incomplete {stage}: {len(final)}/{len(expected)}")
         return final
 
-    base_path = candidate_dir / "final_test_r2_sc16_2048.jsonl"
+    base_path = candidate_dir / "final_test_sc16_2048.jsonl"
     base = generate_stage(
         frame,
         base_path,
@@ -327,8 +327,8 @@ def main() -> None:
     )
 
     audit_capped_rollouts = bool(length_cfg.get("audit_capped_rollouts", True))
-    path_4096 = candidate_dir / "final_test_r2_capped_sc16_4096.jsonl"
-    path_8192 = candidate_dir / "final_test_r2_capped_sc16_8192.jsonl"
+    path_4096 = candidate_dir / "final_test_capped_sc16_4096.jsonl"
+    path_8192 = candidate_dir / "final_test_capped_sc16_8192.jsonl"
     cap_2048_ids: list[str] = []
     cap_4096_ids: list[str] = []
     records_4096: dict[str, dict[str, object]] = {}
@@ -412,7 +412,7 @@ def main() -> None:
         qid for qid in frame["id"].astype(str) if int(base_votes[qid]["margin"]) <= pal_cfg["trigger_margin_le"]
     ]
     pal_frame = frame[frame["id"].astype(str).isin(pal_target_ids)].copy()
-    pal_path = candidate_dir / "final_test_r2_marginle1_pal4.jsonl"
+    pal_path = candidate_dir / "final_test_marginle1_pal4.jsonl"
     pal_raw = generate_stage(
         pal_frame,
         pal_path,
