@@ -316,52 +316,57 @@ def main() -> None:
         generation_cfg["seed"],
     )
 
-    cap_2048_ids = [
-        qid
-        for qid in frame["id"].astype(str)
-        if any(hit_cap(candidate, generation_cfg["base_max_new_tokens"]) for candidate in base[qid]["candidates"])
-    ]
-    frame_4096 = frame[frame["id"].astype(str).isin(cap_2048_ids)].copy()
+    audit_capped_rollouts = bool(length_cfg.get("audit_capped_rollouts", True))
     path_4096 = candidate_dir / "final_test_r2_capped_sc16_4096.jsonl"
-    records_4096 = generate_stage(
-        frame_4096,
-        path_4096,
-        "CAP-SC16-4096",
-        length_cfg["second_max_new_tokens"],
-        cot_prompt,
-        config["prompt"]["version"],
-        generation_cfg["n"],
-        generation_cfg["temperature"],
-        generation_cfg["top_p"],
-        length_cfg["prompt_chunk_4096"],
-        generation_cfg["seed"],
-    ) if len(frame_4096) else {}
-
-    cap_4096_ids = []
-    for qid in cap_2048_ids:
-        base_candidates = sorted(base[qid]["candidates"], key=lambda item: int(item["sample_index"]))
-        long_candidates = sorted(records_4096[qid]["candidates"], key=lambda item: int(item["sample_index"]))
-        if any(
-            hit_cap(base_candidate, generation_cfg["base_max_new_tokens"])
-            and hit_cap(long_candidate, length_cfg["second_max_new_tokens"])
-            for base_candidate, long_candidate in zip(base_candidates, long_candidates)
-        ):
-            cap_4096_ids.append(qid)
-    frame_8192 = frame[frame["id"].astype(str).isin(cap_4096_ids)].copy()
     path_8192 = candidate_dir / "final_test_r2_capped_sc16_8192.jsonl"
-    records_8192 = generate_stage(
-        frame_8192,
-        path_8192,
-        "CAP-SC16-8192",
-        length_cfg["final_max_new_tokens"],
-        cot_prompt,
-        config["prompt"]["version"],
-        generation_cfg["n"],
-        generation_cfg["temperature"],
-        generation_cfg["top_p"],
-        length_cfg["prompt_chunk_8192"],
-        generation_cfg["seed"],
-    ) if len(frame_8192) else {}
+    cap_2048_ids: list[str] = []
+    cap_4096_ids: list[str] = []
+    records_4096: dict[str, dict[str, object]] = {}
+    records_8192: dict[str, dict[str, object]] = {}
+    if audit_capped_rollouts:
+        cap_2048_ids = [
+            qid
+            for qid in frame["id"].astype(str)
+            if any(hit_cap(candidate, generation_cfg["base_max_new_tokens"]) for candidate in base[qid]["candidates"])
+        ]
+        frame_4096 = frame[frame["id"].astype(str).isin(cap_2048_ids)].copy()
+        records_4096 = generate_stage(
+            frame_4096,
+            path_4096,
+            "CAP-SC16-4096",
+            length_cfg["second_max_new_tokens"],
+            cot_prompt,
+            config["prompt"]["version"],
+            generation_cfg["n"],
+            generation_cfg["temperature"],
+            generation_cfg["top_p"],
+            length_cfg["prompt_chunk_4096"],
+            generation_cfg["seed"],
+        ) if len(frame_4096) else {}
+
+        for qid in cap_2048_ids:
+            base_candidates = sorted(base[qid]["candidates"], key=lambda item: int(item["sample_index"]))
+            long_candidates = sorted(records_4096[qid]["candidates"], key=lambda item: int(item["sample_index"]))
+            if any(
+                hit_cap(base_candidate, generation_cfg["base_max_new_tokens"])
+                and hit_cap(long_candidate, length_cfg["second_max_new_tokens"])
+                for base_candidate, long_candidate in zip(base_candidates, long_candidates)
+            ):
+                cap_4096_ids.append(qid)
+        frame_8192 = frame[frame["id"].astype(str).isin(cap_4096_ids)].copy()
+        records_8192 = generate_stage(
+            frame_8192,
+            path_8192,
+            "CAP-SC16-8192",
+            length_cfg["final_max_new_tokens"],
+            cot_prompt,
+            config["prompt"]["version"],
+            generation_cfg["n"],
+            generation_cfg["temperature"],
+            generation_cfg["top_p"],
+            length_cfg["prompt_chunk_8192"],
+            generation_cfg["seed"],
+        ) if len(frame_8192) else {}
 
     base_votes: dict[str, dict[str, object]] = {}
     adaptive_votes: dict[str, dict[str, object]] = {}
