@@ -90,14 +90,24 @@ def validate_adapter(path: Path, base_model: str, expected_sha256: str) -> Path:
 def preload_cuda13() -> None:
     runtime: list[str] = []
     nvrtc: list[str] = []
-    for directory in site.getsitepackages():
-        runtime += glob.glob(str(Path(directory) / "nvidia" / "cu13" / "lib" / "libcudart.so.13*"))
-        runtime += glob.glob(str(Path(directory) / "nvidia" / "cuda_runtime" / "lib" / "libcudart.so.13*"))
-        nvrtc += glob.glob(str(Path(directory) / "nvidia" / "cu13" / "lib" / "libnvrtc.so.13*"))
+    package_roots = set(site.getsitepackages() + [site.getusersitepackages()] + sys.path)
+    for directory in package_roots:
+        if not directory:
+            continue
+        root = Path(directory)
+        runtime += glob.glob(str(root / "nvidia" / "cu13" / "lib" / "libcudart.so.13*"))
+        runtime += glob.glob(str(root / "nvidia" / "cuda_runtime" / "lib" / "libcudart.so.13*"))
+        # Colab's package root has changed between images; keep a bounded fallback under nvidia/.
+        runtime += glob.glob(str(root / "nvidia" / "**" / "libcudart.so.13*"), recursive=True)
+        nvrtc += glob.glob(str(root / "nvidia" / "cu13" / "lib" / "libnvrtc.so.13*"))
+        nvrtc += glob.glob(str(root / "nvidia" / "**" / "libnvrtc.so.13*"), recursive=True)
         nvrtc += glob.glob(str(Path(directory) / "nvidia" / "cuda_nvrtc" / "lib" / "libnvrtc.so.13*"))
     runtime, nvrtc = sorted(set(runtime)), sorted(set(nvrtc))
     if not runtime or not nvrtc:
-        raise RuntimeError("CUDA 13 runtime libraries are missing; install requirements-colab.txt")
+        raise RuntimeError(
+            "CUDA 13 runtime libraries are missing; run Cell 1, restart the runtime, "
+            "then run Cells 2–4."
+        )
     ctypes.CDLL(runtime[0], mode=ctypes.RTLD_GLOBAL)
     ctypes.CDLL(nvrtc[0], mode=ctypes.RTLD_GLOBAL)
     directories = sorted({str(Path(runtime[0]).parent), str(Path(nvrtc[0]).parent)})
