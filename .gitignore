@@ -28,3 +28,5 @@ checkpoints/
 logs/
 wandb/
 .cache/
+# Frozen adapter weights are shipped as a GitHub Release asset, never as Git blobs.
+artifacts/r2_pro4_hint_adapter/adapter_model.safetensors
