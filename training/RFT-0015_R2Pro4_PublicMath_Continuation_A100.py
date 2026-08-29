@@ -161,7 +161,10 @@ def main() -> None:
             raise ValueError("Chat-template prefix mismatch")
         return {"input_ids": encoded["input_ids"], "attention_mask": encoded["attention_mask"], "labels": [-100] * len(prefix) + encoded["input_ids"][len(prefix):], "total_tokens": len(encoded["input_ids"])}
 
-    dataset = Dataset.from_pandas(external[["id", "question", "answer", "solution", "source"]], preserve_index=False).map(tokenize_row, num_proc=2, desc="Tokenizing verified public math")
+    # Python 3.13's multiprocessing + datasets/tblib can emit BufferError while
+    # serializing tokenizer exceptions. One worker remains fast enough here and
+    # avoids turning a preprocessing warning into a worker-pool failure.
+    dataset = Dataset.from_pandas(external[["id", "question", "answer", "solution", "source"]], preserve_index=False).map(tokenize_row, num_proc=1, desc="Tokenizing verified public math")
     lengths = np.asarray(dataset["total_tokens"])
     eligible = dataset.select(np.flatnonzero(lengths <= args.max_seq_length).tolist())
     rejected = int((lengths > args.max_seq_length).sum())
