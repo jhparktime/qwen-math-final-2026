@@ -18,7 +18,20 @@ must never be run on leaderboard or final-test questions.
      that pass strict label verification.
 5. `RFT-0004B_R2_Pro4_Hint_LowDrift_LoRA_A100.ipynb`
    - Continues Lane B on the frozen 65% rewritten-hard / 35% R1-anchor corpus.
-   - The resulting `adapter_final` is the submitted solver.
+   - The resulting `adapter_final` is the frozen R2 parent of the submitted R3 solver.
+6. `RFT-0008B_R3_Pro4Hint_Rollout_A100.ipynb`
+   - Freezes the R2 Pro4-hint solver and generates four Qwen-only rewrites for
+     hard organizer-training questions, using the same training-only hint protocol.
+   - Strictly filters terminal boxed answers and excludes all fixed holdout IDs
+     and templates before materializing the R3 corpus.
+7. `RFT-0008D_R3Mix_R2Continuation_r16_A100.ipynb`
+   - Continues the R2 rank-16 LoRA on the audited R1/R2/R3 Qwen-response mixture.
+   - Writes checkpoints, `adapter_final`, corpus/report hashes, TensorBoard logs,
+     and W&B offline logs. This `adapter_final` is the submitted R3 solver.
+
+The public copies of the R3 notebooks are source-only: cell outputs were
+cleared before publication. They contain neither organizer evaluation records,
+test/leaderboard predictions, teacher API credentials, nor raw training traces.
 
 ## Post-submission candidate (not the frozen submitted adapter)
 

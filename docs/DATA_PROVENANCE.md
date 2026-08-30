@@ -32,4 +32,6 @@ matched the organizer training label.
 
 The raw generated training corpus is not required for final inference. Training
 reproduction requires access to the organizer training file and the audited
-training-only trace artifacts described above.
+training-only trace artifacts described above. The public source-code sequence
+is documented in [`training/README.md`](../training/README.md), including the
+R3 rollout and continuation notebooks that produced the submitted adapter.

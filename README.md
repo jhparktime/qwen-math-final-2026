@@ -39,6 +39,20 @@ claim about the hidden final test. See [MODEL_CARD.md](docs/MODEL_CARD.md) and
 [DATA_PROVENANCE.md](docs/DATA_PROVENANCE.md) for the training and compliance
 record.
 
+## Training source code
+
+The submitted adapter was produced by the staged, train-only R1 → R2 → R3
+workflow documented in [`training/`](training/README.md). In particular, the
+two final-stage sources are:
+
+- [`RFT-0008B_R3_Pro4Hint_Rollout_A100.ipynb`](training/RFT-0008B_R3_Pro4Hint_Rollout_A100.ipynb): creates the strict, Qwen-only R3 rewrite corpus from organizer training records.
+- [`RFT-0008D_R3Mix_R2Continuation_r16_A100.ipynb`](training/RFT-0008D_R3Mix_R2Continuation_r16_A100.ipynb): continues the frozen R2 LoRA on the audited R1/R2/R3 mixture and writes the submitted R3 adapter.
+
+These notebooks contain no organizer leaderboard/final-test records, API keys,
+or generated training traces. They enforce fixed-holdout exclusion and record
+source hashes, run configuration, checkpoints, and offline W&B/TensorBoard
+artifacts. The final frozen model files are available from the release above.
+
 ## A100 Colab setup
 
 Use a fresh A100 40 GB runtime. Before the official inference window, clone
@@ -129,7 +143,8 @@ Before submission, retain the Git commit hash and
 
 ## Scope
 
-This repository provides inference and audit code, frozen configuration,
-documentation, and download instructions for the final adapter. It does not
-redistribute organizer datasets or generated answers. Software is MIT-licensed;
-Qwen and organizer assets retain their own licenses and competition rules.
+This repository provides the staged training source code, inference and audit
+code, frozen configuration, documentation, and download instructions for the
+final adapter. It does not redistribute organizer datasets, generated training
+traces, or generated answers. Software is MIT-licensed; Qwen and organizer
+assets retain their own licenses and competition rules.
