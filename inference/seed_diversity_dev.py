@@ -157,7 +157,8 @@ def main() -> None:
     if set(records) != expected:
         raise RuntimeError(f"Incomplete candidate pool: {len(records)}/{len(expected)}")
 
-    sweep, predictions = [], []
+    sweep: list[dict[str, object]] = []
+    predictions: dict[int, pd.DataFrame] = {}
     for count in SEED_COUNTS:
         rows = []
         for item in frame.itertuples(index=False):
