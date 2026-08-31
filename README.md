@@ -10,6 +10,8 @@ no external API, search, or answer-lookup call.
 ```text
 Qwen2.5-3B-Instruct + frozen R3 LoRA
     -> SC16, 2,048 output tokens
+    -> only capped sample indices: 4,096, then 8,192 when still capped
+    -> frozen conservative stronger-consensus length router
     -> PAL4 only when original SC16 margin <= 1
     -> PAL4: use PAL only with >=3/4 identical executable results
     -> normalized integer plurality / earliest-sample tie break
@@ -32,17 +34,42 @@ The repository and adapter release are public, so no GitHub token is required.
 | Adapter run | `RFT-0008D-r3mix-r2continue-r16-a100` |
 | Adapter SHA-256 | `3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f` |
 | Adapter release | [`r3-r2continue-v1`](https://github.com/jhparktime/qwen-math-final-2026/releases/tag/r3-r2continue-v1) |
-| Pinned inference-code commit | `2254a166b1f607a9fb7a7d55b1136c0238aa21a1` |
+| Pinned inference-code commit | `cd1666c9b17273b3bbf941206cddc99b8a99c145` |
 | Prompt | `r3_r2continue_original_boxed_v1` |
 | vLLM engine seed | `0` (explicitly fixed to match the frozen candidate run) |
 | Request seed | `3` (SC16 and PAL; derived deterministically per ID and prompt version) |
 | Scheduling | vLLM batch invariance enabled; asynchronous scheduling disabled |
-| Public-LB reference | `0.79783` for the archived R3 adaptive experiment; final deployment omits adaptive length |
+| Public-LB reference | `0.79783` for the frozen R3 SC16 + adaptive length + PAL3 experiment |
 
 The public score is an experimental reference, not an input to inference or a
 claim about the hidden final test. See [MODEL_CARD.md](docs/MODEL_CARD.md) and
 [DATA_PROVENANCE.md](docs/DATA_PROVENANCE.md) for the training and compliance
 record.
+
+## Changes after the 2026-08-30 final model-development commit
+
+The frozen policy baseline is commit
+`cd5c38a4d3d7f041ede08827b63c75a91a24ee69` (2026-08-30 18:08 KST).
+The current inference commit keeps its model, adapter, prompts, sampling
+parameters, seed 3, SC16 vote, adaptive 2,048 → 4,096 → 8,192 router, PAL4
+trigger, PAL 3-of-4 threshold, answer extraction, and tie break unchanged.
+
+Only reproducibility and auditability were added after that baseline:
+
+- fixed vLLM engine seed `0`, `VLLM_BATCH_INVARIANT=1`, V1 multiprocessing
+  disabled, and asynchronous scheduling disabled;
+- pinned code checkout in the Colab entrypoint and a separate one-time
+  base-model cache step before offline inference;
+- Git, package, GPU/CUDA, model, adapter, input, configuration, raw-artifact,
+  and submission SHA-256 records;
+- live progress output, exact 2,000-row submission validation, staged training
+  source disclosure, and README/model-card clarification.
+
+No model weight, prompt, generation temperature/top-p, request seed, number of
+samples, adaptive router threshold, PAL policy, integer parser, voting rule, or
+test-dependent branch was changed by this reproducibility patch. The temporary
+post-deadline removal of adaptive length was reverted; the deployed logic is
+again the frozen 2026-08-30 policy.
 
 ## Training source code
 
@@ -91,8 +118,9 @@ a non-empty `answer` column is rejected.
 
 Recommended: open the final Colab notebook above, use a fresh A100 40 GB
 runtime, run Cell 1, restart once, and then run the remaining cells in order.
-The notebook checks out the pinned inference-code commit and writes the final
-run under `FINAL-0004-r3-r2continue-sc16-pal3-deterministic`.
+The notebook checks out the pinned inference-code commit, asserts the complete
+2,000-row input, and writes the final run under
+`FINAL-0005-r3-r2continue-sc16-adaptive-pal3-deterministic`.
 
 Equivalent command-line execution:
 
@@ -100,7 +128,7 @@ Equivalent command-line execution:
 PYTHONPATH=. python inference/final_inference.py \
   --input inputs/deep_chal_math_test.csv \
   --adapter artifacts/r3_r2continue_adapter \
-  --output-dir runs/FINAL-0004-r3-r2continue-sc16-pal3-deterministic
+  --output-dir runs/FINAL-0005-r3-r2continue-sc16-adaptive-pal3-deterministic
 ```
 
 The command is resume-safe. Re-run the exact same command after an
@@ -111,7 +139,7 @@ Validate the resulting CSV:
 ```bash
 python scripts/validate_submission.py \
   --input inputs/deep_chal_math_test.csv \
-  --submission runs/FINAL-0004-r3-r2continue-sc16-pal3-deterministic/submissions/submission.csv \
+  --submission runs/FINAL-0005-r3-r2continue-sc16-adaptive-pal3-deterministic/submissions/submission.csv \
   --expected-rows 2000
 ```
 
@@ -121,9 +149,11 @@ signed integer string and is never converted through floating point.
 ## Outputs and audit trail
 
 ```text
-runs/FINAL-0004-r3-r2continue-sc16-pal3-deterministic/
+runs/FINAL-0005-r3-r2continue-sc16-adaptive-pal3-deterministic/
 ├── candidates/
 │   ├── final_test_sc16_2048.jsonl
+│   ├── final_test_capped_sc16_4096.jsonl
+│   ├── final_test_capped_sc16_8192.jsonl
 │   └── final_test_marginle1_pal4.jsonl
 ├── predictions/final_test_vote_diagnostics.csv
 ├── reports/final_inference_report.json
@@ -131,7 +161,8 @@ runs/FINAL-0004-r3-r2continue-sc16-pal3-deterministic/
 ```
 
 The report records the actual frozen R3 adapter SHA-256 and full configuration,
-along with input, model, adapter, and submission hashes; PAL counts; and
+along with input, model, adapter, and submission hashes; cap/adaptive/PAL
+counts; and
 explicit declarations that no external API, answer lookup, or test label was
 used.
 
@@ -143,13 +174,13 @@ Two clean inference runs are expected to produce the same integer answer for
 every row, including the same `submission.csv` bytes, when **all** of the
 following conditions are kept identical:
 
-- inference code commit `2254a166b1f607a9fb7a7d55b1136c0238aa21a1`;
+- inference code commit `cd1666c9b17273b3bbf941206cddc99b8a99c145`;
 - `Qwen/Qwen2.5-3B-Instruct` revision
   `aa8e72537993ba99e69dfaafa59ed015b17504d1`;
 - frozen R3 adapter SHA-256
   `3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f`;
 - identical input-file SHA-256, row order, prompts, extraction, voting, and
-  PAL policies;
+  adaptive-length and PAL policies;
 - A100 GPU class and the same CUDA, PyTorch, Transformers, and vLLM versions
   recorded by `final_inference_report.json` (`vllm==0.26.0` in the submitted
   environment);
@@ -157,11 +188,13 @@ following conditions are kept identical:
   `VLLM_BATCH_INVARIANT=1`, and asynchronous scheduling disabled;
 - clean output directories for independent replay comparisons.
 
-This exact-replay claim was empirically validated on two independent fresh
-A100 sessions over the same deterministic 500-row subset: the two submission
-files were byte-identical and all 500 integer answers matched. Exact replay is
-not claimed after changing the GPU type, runtime/package versions, code,
-input, model, adapter, prompt, sampling configuration, or selection policy.
+The batch-invariant SC16 + PAL generation path was empirically validated on two
+independent fresh A100 sessions over the same deterministic 500-row subset: the
+two submission files were byte-identical and all 500 integer answers matched.
+The restored adaptive stages call the same deterministic generation function
+with the same per-ID seed derivation. Exact replay is not claimed after changing
+the GPU type, runtime/package versions, code, input, model, adapter, prompt,
+sampling configuration, or selection policy.
 
 The base-model commit, adapter SHA-256, prompt versions, input order, vLLM
 engine seed, per-request seed derivation, batch limits, voting rule, and PAL4
@@ -185,8 +218,9 @@ ID hash and differ only in their Drive output directories:
 The final cell compares file hashes and row-wise answers and requires zero
 answer differences.
 
-The independent A/B replay was completed on two fresh A100 sessions using the
-same deterministic 500-row private subset:
+The independent A/B replay below was completed on two fresh A100 sessions for
+the shared batch-invariant SC16 + PAL path before adaptive restoration, using
+the same deterministic 500-row private subset:
 
 ```text
 lane A submission SHA-256: 25b9e3d7d5c5dbd7bd927010505059b4360b1191d10506bc661ca4b007438bc8
