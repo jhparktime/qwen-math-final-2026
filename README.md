@@ -34,11 +34,12 @@ The repository and adapter release are public, so no GitHub token is required.
 | Adapter run | `RFT-0008D-r3mix-r2continue-r16-a100` |
 | Adapter SHA-256 | `3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f` |
 | Adapter release | [`r3-r2continue-v1`](https://github.com/jhparktime/qwen-math-final-2026/releases/tag/r3-r2continue-v1) |
-| Pinned inference-code commit | `24380f2ab9f4a4d7af417193b44b2fa0da22b7ed` |
+| Pinned inference-code commit | `5190f774e8e988d5471d910f7c581fc205397d53` |
 | Prompt | `r3_r2continue_original_boxed_v1` |
 | vLLM engine seed | `0` (explicitly fixed to match the frozen candidate run) |
 | Request seed | `3` (SC16 and PAL; derived deterministically per ID and prompt version) |
 | Scheduling | vLLM batch invariance enabled; asynchronous scheduling disabled |
+| 8,192-token execution batch | 4 problems per generation call (`prompt_chunk_8192=4`) |
 | Public-LB reference | `0.79783` for the frozen R3 SC16 + adaptive length + PAL3 experiment |
 
 The public score is an experimental reference, not an input to inference or a
@@ -68,6 +69,10 @@ Only reproducibility and auditability were added after that baseline:
   into two disjoint 1,000-row shards, runs the same pinned inference code in
   isolated output directories, and restores original order with strict merge
   validation.
+- 8,192-token adaptive generation batching increased from one to four problems
+  per call. This changes GPU scheduling and throughput only; per-ID seeds,
+  `n=16`, token limit, candidates, router, and final answers remain governed by
+  the same frozen policy under vLLM batch invariance.
 
 No model weight, prompt, generation temperature/top-p, request seed, number of
 samples, adaptive router threshold, PAL policy, integer parser, voting rule, or
@@ -174,7 +179,7 @@ conditions of the pinned single-session inference while reducing wall-clock
 time.
 
 The two inference sessions must never share a shard output directory. Both
-notebooks pin inference commit `24380f2ab9f4a4d7af417193b44b2fa0da22b7ed`;
+notebooks pin inference commit `5190f774e8e988d5471d910f7c581fc205397d53`;
 per-ID seed derivation and vLLM batch invariance make the output independent of
 the two-shard batching topology. Sharding does not change the model, prompt,
 sampling, adaptive router, PAL policy, parser, vote, or answer selection.
@@ -219,7 +224,7 @@ Two clean inference runs are expected to produce the same integer answer for
 every row, including the same `submission.csv` bytes, when **all** of the
 following conditions are kept identical:
 
-- inference code commit `24380f2ab9f4a4d7af417193b44b2fa0da22b7ed`;
+- inference code commit `5190f774e8e988d5471d910f7c581fc205397d53`;
 - `Qwen/Qwen2.5-3B-Instruct` revision
   `aa8e72537993ba99e69dfaafa59ed015b17504d1`;
 - frozen R3 adapter SHA-256
