@@ -34,7 +34,7 @@ The repository and adapter release are public, so no GitHub token is required.
 | Adapter run | `RFT-0008D-r3mix-r2continue-r16-a100` |
 | Adapter SHA-256 | `3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f` |
 | Adapter release | [`r3-r2continue-v1`](https://github.com/jhparktime/qwen-math-final-2026/releases/tag/r3-r2continue-v1) |
-| Pinned inference-code commit | `cd1666c9b17273b3bbf941206cddc99b8a99c145` |
+| Pinned inference-code commit | `24380f2ab9f4a4d7af417193b44b2fa0da22b7ed` |
 | Prompt | `r3_r2continue_original_boxed_v1` |
 | vLLM engine seed | `0` (explicitly fixed to match the frozen candidate run) |
 | Request seed | `3` (SC16 and PAL; derived deterministically per ID and prompt version) |
@@ -174,7 +174,7 @@ Two clean inference runs are expected to produce the same integer answer for
 every row, including the same `submission.csv` bytes, when **all** of the
 following conditions are kept identical:
 
-- inference code commit `cd1666c9b17273b3bbf941206cddc99b8a99c145`;
+- inference code commit `24380f2ab9f4a4d7af417193b44b2fa0da22b7ed`;
 - `Qwen/Qwen2.5-3B-Instruct` revision
   `aa8e72537993ba99e69dfaafa59ed015b17504d1`;
 - frozen R3 adapter SHA-256
