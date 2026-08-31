@@ -140,6 +140,20 @@ interruption; completed problem IDs are read from append-only JSONL artifacts.
 
 ### Two-A100 execution option
 
+The final submission procedure uses this two-shard topology. The organizer's
+final clarification permitting reproducibility-only fixes arrived late in the
+inference window, leaving insufficient time for a conservative full replay in
+one session. The unchanged ordered 2,000-row input is therefore divided into
+two fixed contiguous 1,000-row shards and evaluated concurrently.
+
+This division changes only the execution schedule. Each problem uses the same
+pinned model and adapter, prompt, sampling parameters, per-ID deterministic
+seed, SC16 vote, adaptive-length router, PAL4 fallback, integer parser, and
+answer-selection rule as the single-session pipeline. There is no cross-row
+model state or cross-row answer selection. `VLLM_BATCH_INVARIANT=1` and
+synchronous scheduling make generation invariant to the shard batching
+topology under the recorded A100 environment.
+
 When the inference window is short, run the two shard notebooks simultaneously
 in separate A100 sessions:
 
@@ -151,6 +165,13 @@ After both report completion, run
 in any CPU Colab session. It verifies both shard boundaries, restores the exact
 2,000-row input order, rejects missing/duplicate/non-integer answers, and writes
 `submission_final_r3_2shard.csv` plus a SHA-256 merge report.
+
+The merge step does not vote, rescore, filter, or replace any answer. It only
+validates the two disjoint ID ranges, concatenates them in original input
+order, checks exact integer syntax, and records input, shard, and final-output
+hashes. Consequently, the two-session procedure preserves the reproducibility
+conditions of the pinned single-session inference while reducing wall-clock
+time.
 
 The two inference sessions must never share a shard output directory. Both
 notebooks pin inference commit `24380f2ab9f4a4d7af417193b44b2fa0da22b7ed`;
