@@ -63,7 +63,11 @@ Only reproducibility and auditability were added after that baseline:
 - Git, package, GPU/CUDA, model, adapter, input, configuration, raw-artifact,
   and submission SHA-256 records;
 - live progress output, exact 2,000-row submission validation, staged training
-  source disclosure, and README/model-card clarification.
+  source disclosure, and README/model-card clarification;
+- an optional two-session wrapper that partitions the unchanged ordered input
+  into two disjoint 1,000-row shards, runs the same pinned inference code in
+  isolated output directories, and restores original order with strict merge
+  validation.
 
 No model weight, prompt, generation temperature/top-p, request seed, number of
 samples, adaptive router threshold, PAL policy, integer parser, voting rule, or
@@ -133,6 +137,26 @@ PYTHONPATH=. python inference/final_inference.py \
 
 The command is resume-safe. Re-run the exact same command after an
 interruption; completed problem IDs are read from append-only JSONL artifacts.
+
+### Two-A100 execution option
+
+When the inference window is short, run the two shard notebooks simultaneously
+in separate A100 sessions:
+
+- [`FINAL_PRIVATE_INFERENCE_A100_SHARD0_OF_2.ipynb`](notebooks/FINAL_PRIVATE_INFERENCE_A100_SHARD0_OF_2.ipynb): original rows 0–999
+- [`FINAL_PRIVATE_INFERENCE_A100_SHARD1_OF_2.ipynb`](notebooks/FINAL_PRIVATE_INFERENCE_A100_SHARD1_OF_2.ipynb): original rows 1,000–1,999
+
+After both report completion, run
+[`FINAL_PRIVATE_MERGE_2SHARDS.ipynb`](notebooks/FINAL_PRIVATE_MERGE_2SHARDS.ipynb)
+in any CPU Colab session. It verifies both shard boundaries, restores the exact
+2,000-row input order, rejects missing/duplicate/non-integer answers, and writes
+`submission_final_r3_2shard.csv` plus a SHA-256 merge report.
+
+The two inference sessions must never share a shard output directory. Both
+notebooks pin inference commit `24380f2ab9f4a4d7af417193b44b2fa0da22b7ed`;
+per-ID seed derivation and vLLM batch invariance make the output independent of
+the two-shard batching topology. Sharding does not change the model, prompt,
+sampling, adaptive router, PAL policy, parser, vote, or answer selection.
 
 Validate the resulting CSV:
 
