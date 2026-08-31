@@ -31,6 +31,7 @@ question leaves the runtime.
 | Prompt | `r3_r2continue_original_boxed_v1` |
 | vLLM engine seed | `0` (explicitly fixed to match the frozen candidate run) |
 | Request seed | `3` (SC16 and PAL; derived deterministically per ID and prompt version) |
+| Scheduling | vLLM batch invariance enabled; asynchronous scheduling disabled |
 | Public-LB reference | `0.79783` for the archived R3 adaptive experiment; final deployment omits adaptive length |
 
 The public score is an experimental reference, not an input to inference or a
@@ -126,7 +127,8 @@ used.
 
 The base-model commit, adapter SHA-256, prompt versions, input order, vLLM
 engine seed, per-request seed derivation, batch limits, voting rule, and PAL4
-3-of-4 rule are frozen. Every raw JSONL row records its derived sampling seed.
+3-of-4 rule are frozen. vLLM batch invariance is enabled and asynchronous
+scheduling is disabled. Every raw JSONL row records its derived sampling seed.
 The final report additionally records the runtime Git commit and dirty status,
 Python/platform/GPU/CUDA identifiers, and installed inference-package versions.
 
@@ -134,6 +136,16 @@ Reusing the same output directory is exactly resume-safe: completed IDs are not
 regenerated. A clean replay in a new directory should use the same A100 class,
 package versions, input SHA-256, and frozen configuration. Compare both
 `submission.csv` SHA-256 values and the row-wise answers before submission.
+
+For an independent 500-row replay on two simultaneous fresh A100 sessions,
+run the following notebooks. They select the same private subset by a fixed
+ID hash and differ only in their Drive output directories:
+
+- [`REPRO-0001A_Private500_Deterministic_A100.ipynb`](notebooks/REPRO-0001A_Private500_Deterministic_A100.ipynb)
+- [`REPRO-0001B_Private500_Deterministic_A100.ipynb`](notebooks/REPRO-0001B_Private500_Deterministic_A100.ipynb)
+
+The final cell compares file hashes and row-wise answers and requires zero
+answer differences.
 
 ## Reproducibility checks
 
