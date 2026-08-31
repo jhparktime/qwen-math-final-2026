@@ -11,7 +11,7 @@ no external API, search, or answer-lookup call.
 Qwen2.5-3B-Instruct + frozen R3 LoRA
     -> SC16, 2,048 output tokens
     -> PAL4 only when original SC16 margin <= 1
-    -> use PAL only with >=3/4 identical executable results
+    -> PAL4: use PAL only with >=3/4 identical executable results
     -> normalized integer plurality / earliest-sample tie break
 ```
 
@@ -29,7 +29,8 @@ question leaves the runtime.
 | Adapter SHA-256 | `3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f` |
 | Adapter release | [`r3-r2continue-v1`](https://github.com/jhparktime/qwen-math-final-2026/releases/tag/r3-r2continue-v1) |
 | Prompt | `r3_r2continue_original_boxed_v1` |
-| Sampling seed | `3` (SC16 and PAL; derived deterministically per ID and prompt version) |
+| vLLM engine seed | `0` (explicitly fixed to match the frozen candidate run) |
+| Request seed | `3` (SC16 and PAL; derived deterministically per ID and prompt version) |
 | Public-LB reference | `0.79783` for the archived R3 adaptive experiment; final deployment omits adaptive length |
 
 The public score is an experimental reference, not an input to inference or a
@@ -120,6 +121,19 @@ The report records the actual frozen R3 adapter SHA-256 and full configuration,
 along with input, model, adapter, and submission hashes; PAL counts; and
 explicit declarations that no external API, answer lookup, or test label was
 used.
+
+## Deterministic replay
+
+The base-model commit, adapter SHA-256, prompt versions, input order, vLLM
+engine seed, per-request seed derivation, batch limits, voting rule, and PAL4
+3-of-4 rule are frozen. Every raw JSONL row records its derived sampling seed.
+The final report additionally records the runtime Git commit and dirty status,
+Python/platform/GPU/CUDA identifiers, and installed inference-package versions.
+
+Reusing the same output directory is exactly resume-safe: completed IDs are not
+regenerated. A clean replay in a new directory should use the same A100 class,
+package versions, input SHA-256, and frozen configuration. Compare both
+`submission.csv` SHA-256 values and the row-wise answers before submission.
 
 ## Reproducibility checks
 

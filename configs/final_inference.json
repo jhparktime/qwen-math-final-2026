@@ -14,7 +14,9 @@
     "user_suffix": "Solve this step by step, then give the final answer as a single integer inside \\boxed{}."
   },
   "generation": {
+    "engine_seed": 0,
     "seed": 3,
+    "seed_policy": "stable_seed(seed, prompt_version, input_id) per request; vLLM n=16 branches deterministically from that request seed",
     "n": 16,
     "temperature": 1.0,
     "top_p": 0.95,
@@ -38,6 +40,7 @@
     "prompt_chunk": 32,
     "trigger_margin_le": 1,
     "min_agreement": 3,
+    "policy_name": "PAL4 with 3-of-4 integer agreement",
     "system": "You are a mathematical programmer. Solve the problem by writing one short, deterministic Python program using exact arithmetic or exhaustive search.",
     "user_suffix": "Return exactly one fenced ```python``` block and no prose. The program must be self-contained, use only the Python standard library, and print exactly one signed integer as its final non-empty output line. Do not read files, use the network, spawn processes, or hard-code a supplied answer.",
     "sandbox": {

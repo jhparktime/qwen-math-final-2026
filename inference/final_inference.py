@@ -10,10 +10,13 @@ from __future__ import annotations
 import argparse
 import ctypes
 import glob
+import importlib.metadata as importlib_metadata
 import json
 import logging
 import os
+import platform
 import site
+import subprocess
 import sys
 import time
 from collections import Counter
@@ -114,6 +117,34 @@ def preload_cuda13() -> None:
     os.environ["LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
 
 
+def distribution_version(name: str) -> str | None:
+    try:
+        return importlib_metadata.version(name)
+    except importlib_metadata.PackageNotFoundError:
+        return None
+
+
+def local_git_state() -> dict[str, object]:
+    try:
+        commit = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        dirty = bool(
+            subprocess.run(
+                ["git", "-C", str(REPO_ROOT), "status", "--porcelain"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        )
+        return {"commit": commit, "dirty": dirty}
+    except (OSError, subprocess.CalledProcessError):
+        return {"commit": None, "dirty": None}
+
+
 def main() -> None:
     args = parse_args()
     config = json.loads(args.config.read_text(encoding="utf-8"))
@@ -173,6 +204,7 @@ def main() -> None:
     llm = LLM(
         model=model_cfg["id"],
         revision=model_cfg["revision"],
+        seed=generation_cfg["engine_seed"],
         dtype="bfloat16",
         tensor_parallel_size=1,
         distributed_executor_backend="uni",
@@ -413,6 +445,27 @@ def main() -> None:
         "adapter_weight": str(adapter_weight),
         "adapter_weight_sha256": sha256_file(adapter_weight),
         "configuration": config,
+        "reproducibility": {
+            "git": local_git_state(),
+            "python": platform.python_version(),
+            "platform": platform.platform(),
+            "gpu": torch.cuda.get_device_name(0),
+            "cuda": torch.version.cuda,
+            "engine_seed": generation_cfg["engine_seed"],
+            "request_seed_base": generation_cfg["seed"],
+            "request_seed_policy": generation_cfg["seed_policy"],
+            "packages": {
+                name: distribution_version(name)
+                for name in (
+                    "vllm",
+                    "transformers",
+                    "torch",
+                    "pandas",
+                    "nvidia-cuda-runtime",
+                    "nvidia-cuda-nvrtc",
+                )
+            },
+        },
         "diagnostics": {
             "pal_target_rows": len(pal_target_ids),
             "pal_answer_changes": int(decisions["used_pal"].sum()),

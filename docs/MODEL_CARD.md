@@ -25,10 +25,11 @@ final-test question is transmitted to an API.
 
 ## Frozen inference
 
-- SC16: seed 3, temperature 1.0, top-p 0.95, 2,048 output tokens
+- SC16: vLLM engine seed 0; per-request base seed 3; temperature 1.0,
+  top-p 0.95, 2,048 output tokens
 - Vote: normalized integer plurality; earliest sampled answer breaks a tie
-- PAL fallback: seed 3; only original SC16 margin <= 1; accept an executable
-  PAL answer only when at least 3 of 4 executions agree
+- PAL4 fallback: per-request base seed 3; only original SC16 margin <= 1;
+  accept an executable PAL answer only when at least 3 of 4 executions agree
 - Output: one exact signed integer string per input ID
 
 Public leaderboard reference: `0.79783` for an archived R3 adaptive experiment.
