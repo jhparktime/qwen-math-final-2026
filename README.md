@@ -137,6 +137,32 @@ used.
 
 ## Deterministic replay
 
+### Validated exact-replay scope
+
+Two clean inference runs are expected to produce the same integer answer for
+every row, including the same `submission.csv` bytes, when **all** of the
+following conditions are kept identical:
+
+- inference code commit `2254a166b1f607a9fb7a7d55b1136c0238aa21a1`;
+- `Qwen/Qwen2.5-3B-Instruct` revision
+  `aa8e72537993ba99e69dfaafa59ed015b17504d1`;
+- frozen R3 adapter SHA-256
+  `3b13039776a5e77567d8a0e3b8425b762bae747d5d195cd82966a3a87597633f`;
+- identical input-file SHA-256, row order, prompts, extraction, voting, and
+  PAL policies;
+- A100 GPU class and the same CUDA, PyTorch, Transformers, and vLLM versions
+  recorded by `final_inference_report.json` (`vllm==0.26.0` in the submitted
+  environment);
+- engine seed `0`, request seed `3`, per-ID deterministic seed derivation,
+  `VLLM_BATCH_INVARIANT=1`, and asynchronous scheduling disabled;
+- clean output directories for independent replay comparisons.
+
+This exact-replay claim was empirically validated on two independent fresh
+A100 sessions over the same deterministic 500-row subset: the two submission
+files were byte-identical and all 500 integer answers matched. Exact replay is
+not claimed after changing the GPU type, runtime/package versions, code,
+input, model, adapter, prompt, sampling configuration, or selection policy.
+
 The base-model commit, adapter SHA-256, prompt versions, input order, vLLM
 engine seed, per-request seed derivation, batch limits, voting rule, and PAL4
 3-of-4 rule are frozen. vLLM batch invariance is enabled and asynchronous
