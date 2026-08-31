@@ -155,6 +155,7 @@ def main() -> None:
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
+    os.environ["VLLM_BATCH_INVARIANT"] = "1"
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     frame = read_input(args.input.resolve(), config.get("expected_rows"))
@@ -218,7 +219,7 @@ def main() -> None:
         max_lora_rank=64,
         max_loras=1,
         max_cpu_loras=2,
-        performance_mode="throughput",
+        async_scheduling=False,
         trust_remote_code=False,
     )
     lora_request = LoRARequest("r2_pro4hint_final", 1, str(adapter_path))
@@ -454,6 +455,9 @@ def main() -> None:
             "engine_seed": generation_cfg["engine_seed"],
             "request_seed_base": generation_cfg["seed"],
             "request_seed_policy": generation_cfg["seed_policy"],
+            "vllm_batch_invariant": os.environ.get("VLLM_BATCH_INVARIANT"),
+            "vllm_v1_multiprocessing": os.environ.get("VLLM_ENABLE_V1_MULTIPROCESSING"),
+            "async_scheduling": False,
             "packages": {
                 name: distribution_version(name)
                 for name in (

@@ -1,6 +1,6 @@
 {
   "schema_version": "qwen_math_final_v1",
-  "run_id": "FINAL-0003-r3-r2continue-sc16-pal3",
+  "run_id": "FINAL-0004-r3-r2continue-sc16-pal3-deterministic",
   "expected_rows": 2000,
   "model": {
     "id": "Qwen/Qwen2.5-3B-Instruct",
@@ -16,7 +16,9 @@
   "generation": {
     "engine_seed": 0,
     "seed": 3,
-    "seed_policy": "stable_seed(seed, prompt_version, input_id) per request; vLLM n=16 branches deterministically from that request seed",
+    "seed_policy": "stable_seed(seed, prompt_version, input_id) per request; vLLM n=16 with batch invariance and synchronous scheduling",
+    "batch_invariant": true,
+    "async_scheduling": false,
     "n": 16,
     "temperature": 1.0,
     "top_p": 0.95,
