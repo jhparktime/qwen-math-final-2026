@@ -36,7 +36,7 @@
     "second_max_new_tokens": 4096,
     "final_max_new_tokens": 8192,
     "prompt_chunk_4096": 4,
-    "prompt_chunk_8192": 1,
+    "prompt_chunk_8192": 4,
     "replacement_rule": "replace only originally capped sample index when longer run ends in a terminal boxed integer",
     "router": {
       "top_gain_min": 2,
