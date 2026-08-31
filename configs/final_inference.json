@@ -1,6 +1,6 @@
 {
   "schema_version": "qwen_math_final_v1",
-  "run_id": "FINAL-0002-r3-r2continue-sc16-adaptive-pal3",
+  "run_id": "FINAL-0003-r3-r2continue-sc16-pal3",
   "expected_rows": 2000,
   "model": {
     "id": "Qwen/Qwen2.5-3B-Instruct",
@@ -27,20 +27,6 @@
     "vote": "normalized integer plurality",
     "tie_break": "earliest sampled answer among tied top counts",
     "no_valid_vote_fallback": "0"
-  },
-  "adaptive_length": {
-    "second_max_new_tokens": 4096,
-    "final_max_new_tokens": 8192,
-    "prompt_chunk_4096": 4,
-    "prompt_chunk_8192": 1,
-    "replacement_rule": "replace only originally capped sample index when longer run ends in a terminal boxed integer",
-    "router": {
-      "top_gain_min": 2,
-      "margin_gain_min": 1,
-      "extended_top_min": 4,
-      "protect_pal_override": true,
-      "status": "conservative deployment default; replace with CHAMP-0003 frozen values if promoted before model-development deadline"
-    }
   },
   "pal": {
     "prompt_version": "r3_r2continue_conditional_pal4_v1",

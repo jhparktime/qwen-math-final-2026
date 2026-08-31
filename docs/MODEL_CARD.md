@@ -27,20 +27,16 @@ final-test question is transmitted to an API.
 
 - SC16: seed 3, temperature 1.0, top-p 0.95, 2,048 output tokens
 - Vote: normalized integer plurality; earliest sampled answer breaks a tie
-- Adaptive length: capped sample indices may be regenerated at 4,096 and then
-  8,192 tokens; a conservative stronger-consensus router decides whether a
-  replacement may change the result
 - PAL fallback: seed 3; only original SC16 margin <= 1; accept an executable
   PAL answer only when at least 3 of 4 executions agree
 - Output: one exact signed integer string per input ID
 
-Public leaderboard reference: `0.79783` for this R3 SC16 + PAL3 + adaptive
-configuration. It is descriptive only and not used during final inference.
+Public leaderboard reference: `0.79783` for an archived R3 adaptive experiment.
+The final deployment omits adaptive length because it changed only one of 2,000
+private-test answers while requiring substantial additional computation.
 
 ## Limitations
 
-The solver can produce convincing but incorrect reasoning. Longer output is
-not automatically better, so adaptive replacement is consensus-gated and does
-not override a valid PAL result. PAL code is restricted to a small Python
-standard-library allowlist with CPU, wall-time, memory, file-size, and
-file-descriptor limits.
+The solver can produce convincing but incorrect reasoning. PAL code is
+restricted to a small Python standard-library allowlist with CPU, wall-time,
+memory, file-size, and file-descriptor limits.

@@ -10,8 +10,6 @@ no external API, search, or answer-lookup call.
 ```text
 Qwen2.5-3B-Instruct + frozen R3 LoRA
     -> SC16, 2,048 output tokens
-    -> only capped sample indices: 4,096, then 8,192 when still capped
-    -> conservative stronger-consensus length router
     -> PAL4 only when original SC16 margin <= 1
     -> use PAL only with >=3/4 identical executable results
     -> normalized integer plurality / earliest-sample tie break
@@ -32,7 +30,7 @@ question leaves the runtime.
 | Adapter release | [`r3-r2continue-v1`](https://github.com/jhparktime/qwen-math-final-2026/releases/tag/r3-r2continue-v1) |
 | Prompt | `r3_r2continue_original_boxed_v1` |
 | Sampling seed | `3` (SC16 and PAL; derived deterministically per ID and prompt version) |
-| Public-LB reference | `0.79783` for R3 SC16 + PAL3 + adaptive length |
+| Public-LB reference | `0.79783` for the archived R3 adaptive experiment; final deployment omits adaptive length |
 
 The public score is an experimental reference, not an input to inference or a
 claim about the hidden final test. See [MODEL_CARD.md](docs/MODEL_CARD.md) and
@@ -112,8 +110,6 @@ signed integer string and is never converted through floating point.
 runs/final-private/
 ├── candidates/
 │   ├── final_test_sc16_2048.jsonl
-│   ├── final_test_capped_sc16_4096.jsonl
-│   ├── final_test_capped_sc16_8192.jsonl
 │   └── final_test_marginle1_pal4.jsonl
 ├── predictions/final_test_vote_diagnostics.csv
 ├── reports/final_inference_report.json
@@ -121,7 +117,7 @@ runs/final-private/
 ```
 
 The report records the actual frozen R3 adapter SHA-256 and full configuration,
-along with input, model, adapter, and submission hashes; cap/PAL counts; and
+along with input, model, adapter, and submission hashes; PAL counts; and
 explicit declarations that no external API, answer lookup, or test label was
 used.
 
