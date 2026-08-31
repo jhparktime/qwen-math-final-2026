@@ -178,6 +178,14 @@ hashes. Consequently, the two-session procedure preserves the reproducibility
 conditions of the pinned single-session inference while reducing wall-clock
 time.
 
+Runs that began immediately before the chunk-four default commit may record
+code commit `24380f2ab9f4a4d7af417193b44b2fa0da22b7ed` while embedding the runtime
+override `prompt_chunk_8192=4` in their immutable report configuration. New
+runs record commit `5190f774e8e988d5471d910f7c581fc205397d53`, where the same value is the
+repository default. The merge verifier accepts either code-identical inference
+commit only when the report itself proves chunk 4, batch invariance, and
+synchronous scheduling; it records every observed commit in the merge report.
+
 The two inference sessions must never share a shard output directory. Both
 notebooks pin inference commit `5190f774e8e988d5471d910f7c581fc205397d53`;
 per-ID seed derivation and vLLM batch invariance make the output independent of
