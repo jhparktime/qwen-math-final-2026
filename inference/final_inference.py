@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Offline final-test inference for Qwen2.5-3B-Instruct + frozen LoRA.
 
-Pipeline: SC16/2048 -> PAL4 fallback on SC16 margin <= 1.
+Pipeline: SC16/2048 -> capped-candidate 4096 -> capped-candidate 8192 ->
+conservative length router -> PAL4 fallback on original SC16 margin <= 1.
 Every generation stage is append-only and resume-safe by problem id.
 """
 
@@ -117,6 +118,12 @@ def preload_cuda13() -> None:
     os.environ["LIBRARY_PATH"] = os.environ["LD_LIBRARY_PATH"]
 
 
+def hit_cap(candidate: dict[str, object], limit: int) -> bool:
+    return str(candidate.get("finish_reason", "")) == "length" or int(
+        candidate.get("generated_tokens", 0) or 0
+    ) >= limit - 1
+
+
 def distribution_version(name: str) -> str | None:
     try:
         return importlib_metadata.version(name)
@@ -150,6 +157,7 @@ def main() -> None:
     config = json.loads(args.config.read_text(encoding="utf-8"))
     model_cfg = config["model"]
     generation_cfg = config["generation"]
+    length_cfg = config["adaptive_length"]
     pal_cfg = config["pal"]
 
     os.environ["HF_HUB_OFFLINE"] = "1"
@@ -350,10 +358,107 @@ def main() -> None:
         generation_cfg["seed"],
     )
 
+    path_4096 = candidate_dir / "final_test_capped_sc16_4096.jsonl"
+    path_8192 = candidate_dir / "final_test_capped_sc16_8192.jsonl"
+    cap_2048_ids = [
+        qid
+        for qid in frame["id"].astype(str)
+        if any(
+            hit_cap(candidate, generation_cfg["base_max_new_tokens"])
+            for candidate in base[qid]["candidates"]
+        )
+    ]
+    frame_4096 = frame[frame["id"].astype(str).isin(cap_2048_ids)].copy()
+    records_4096 = (
+        generate_stage(
+            frame_4096,
+            path_4096,
+            "CAP-SC16-4096",
+            length_cfg["second_max_new_tokens"],
+            cot_prompt,
+            config["prompt"]["version"],
+            generation_cfg["n"],
+            generation_cfg["temperature"],
+            generation_cfg["top_p"],
+            length_cfg["prompt_chunk_4096"],
+            generation_cfg["seed"],
+        )
+        if len(frame_4096)
+        else {}
+    )
+
+    cap_4096_ids: list[str] = []
+    for qid in cap_2048_ids:
+        base_candidates = sorted(
+            base[qid]["candidates"], key=lambda item: int(item["sample_index"])
+        )
+        long_candidates = sorted(
+            records_4096[qid]["candidates"], key=lambda item: int(item["sample_index"])
+        )
+        if any(
+            hit_cap(base_candidate, generation_cfg["base_max_new_tokens"])
+            and hit_cap(long_candidate, length_cfg["second_max_new_tokens"])
+            for base_candidate, long_candidate in zip(base_candidates, long_candidates)
+        ):
+            cap_4096_ids.append(qid)
+    frame_8192 = frame[frame["id"].astype(str).isin(cap_4096_ids)].copy()
+    records_8192 = (
+        generate_stage(
+            frame_8192,
+            path_8192,
+            "CAP-SC16-8192",
+            length_cfg["final_max_new_tokens"],
+            cot_prompt,
+            config["prompt"]["version"],
+            generation_cfg["n"],
+            generation_cfg["temperature"],
+            generation_cfg["top_p"],
+            length_cfg["prompt_chunk_8192"],
+            generation_cfg["seed"],
+        )
+        if len(frame_8192)
+        else {}
+    )
+
     base_votes: dict[str, dict[str, object]] = {}
+    adaptive_votes: dict[str, dict[str, object]] = {}
+    replacement_counts: dict[str, int] = {}
     for qid in frame["id"].astype(str):
         original = sorted(base[qid]["candidates"], key=lambda item: int(item["sample_index"]))
+        resolved = [dict(candidate) for candidate in original]
+        replacements = 0
+        if qid in records_4096:
+            long_4096 = sorted(
+                records_4096[qid]["candidates"], key=lambda item: int(item["sample_index"])
+            )
+            long_8192 = (
+                sorted(
+                    records_8192[qid]["candidates"],
+                    key=lambda item: int(item["sample_index"]),
+                )
+                if qid in records_8192
+                else None
+            )
+            for index, base_candidate in enumerate(original):
+                if not hit_cap(base_candidate, generation_cfg["base_max_new_tokens"]):
+                    continue
+                candidate = long_4096[index]
+                if (
+                    hit_cap(candidate, length_cfg["second_max_new_tokens"])
+                    and long_8192 is not None
+                ):
+                    candidate = long_8192[index]
+                strict_answer = candidate.get("terminal_boxed_answer")
+                if strict_answer is not None:
+                    resolved[index] = {
+                        **candidate,
+                        "answer": strict_answer,
+                        "resolved_from_cap": True,
+                    }
+                    replacements += 1
         base_votes[qid] = vote_candidates(original)
+        adaptive_votes[qid] = vote_candidates(resolved)
+        replacement_counts[qid] = replacements
 
     pal_target_ids = [
         qid for qid in frame["id"].astype(str) if int(base_votes[qid]["margin"]) <= pal_cfg["trigger_margin_le"]
@@ -396,6 +501,7 @@ def main() -> None:
     for row in frame.itertuples(index=False):
         qid = str(row.id)
         base_vote = base_votes[qid]
+        adaptive_vote = adaptive_votes[qid]
         pal = pal_results.get(qid, {"answer": None, "top_count": 0, "valid_executions": 0})
         use_pal = bool(
             int(base_vote["margin"]) <= pal_cfg["trigger_margin_le"]
@@ -403,17 +509,36 @@ def main() -> None:
             and int(pal["top_count"]) >= pal_cfg["min_agreement"]
             and pal["answer"] != base_vote["answer"]
         )
-        final_answer = str(pal["answer"] if use_pal else base_vote["answer"])
+        top_gain = int(adaptive_vote["top_count"]) - int(base_vote["top_count"])
+        margin_gain = int(adaptive_vote["margin"]) - int(base_vote["margin"])
+        use_length = bool(
+            not use_pal
+            and replacement_counts[qid] > 0
+            and adaptive_vote["answer"] != base_vote["answer"]
+            and top_gain >= length_cfg["router"]["top_gain_min"]
+            and margin_gain >= length_cfg["router"]["margin_gain_min"]
+            and int(adaptive_vote["top_count"]) >= length_cfg["router"]["extended_top_min"]
+        )
+        final_answer = (
+            str(pal["answer"])
+            if use_pal
+            else str(adaptive_vote["answer"] if use_length else base_vote["answer"])
+        )
         decision_rows.append(
             {
                 "id": qid,
                 "base_answer": base_vote["answer"],
                 "base_top_count": base_vote["top_count"],
                 "base_margin": base_vote["margin"],
+                "adaptive_answer": adaptive_vote["answer"],
+                "adaptive_top_count": adaptive_vote["top_count"],
+                "adaptive_margin": adaptive_vote["margin"],
+                "cap_replacements": replacement_counts[qid],
                 "pal_answer": pal["answer"],
                 "pal_top_count": pal["top_count"],
                 "pal_valid_executions": pal["valid_executions"],
                 "used_pal": use_pal,
+                "used_adaptive_length": use_length,
                 "final_answer": final_answer,
             }
         )
@@ -471,12 +596,18 @@ def main() -> None:
             },
         },
         "diagnostics": {
+            "cap_2048_rows": len(cap_2048_ids),
+            "cap_4096_rows": len(cap_4096_ids),
+            "replaced_capped_candidates": int(sum(replacement_counts.values())),
+            "adaptive_answer_changes": int(decisions["used_adaptive_length"].sum()),
             "pal_target_rows": len(pal_target_ids),
             "pal_answer_changes": int(decisions["used_pal"].sum()),
             "no_valid_vote_rows": int((decisions["base_top_count"] == 0).sum()),
         },
         "artifacts": {
             "base_raw": str(base_path),
+            "adaptive_4096_raw": str(path_4096),
+            "adaptive_8192_raw": str(path_8192),
             "pal_raw": str(pal_path),
             "vote_diagnostics": str(decisions_path),
             "submission": str(submission_path),

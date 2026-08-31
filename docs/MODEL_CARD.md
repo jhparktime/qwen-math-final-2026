@@ -28,16 +28,22 @@ final-test question is transmitted to an API.
 - SC16: vLLM engine seed 0; per-request base seed 3; temperature 1.0,
   top-p 0.95, 2,048 output tokens
 - Vote: normalized integer plurality; earliest sampled answer breaks a tie
+- Adaptive length: only capped sample indices are regenerated at 4,096 and
+  then 8,192 tokens; the frozen stronger-consensus router requires top-count
+  gain >=2, margin gain >=1, and extended top count >=4
 - PAL4 fallback: per-request base seed 3; only original SC16 margin <= 1;
-  accept an executable PAL answer only when at least 3 of 4 executions agree
+  accept an executable PAL answer only when at least 3 of 4 executions agree;
+  a valid PAL replacement has precedence over adaptive length
 - Output: one exact signed integer string per input ID
 
-Public leaderboard reference: `0.79783` for an archived R3 adaptive experiment.
-The final deployment omits adaptive length because it changed only one of 2,000
-private-test answers while requiring substantial additional computation.
+Public leaderboard reference: `0.79783` for this frozen R3 SC16 + adaptive
+length + PAL3 configuration. It is descriptive only and is not used during
+final inference.
 
 ## Limitations
 
-The solver can produce convincing but incorrect reasoning. PAL code is
-restricted to a small Python standard-library allowlist with CPU, wall-time,
-memory, file-size, and file-descriptor limits.
+The solver can produce convincing but incorrect reasoning. Longer output is
+not automatically better, so adaptive replacement is consensus-gated and does
+not override a valid PAL result. PAL code is restricted to a small Python
+standard-library allowlist with CPU, wall-time, memory, file-size, and
+file-descriptor limits.
